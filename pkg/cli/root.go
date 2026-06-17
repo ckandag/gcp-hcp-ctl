@@ -15,6 +15,7 @@ var (
 	region       string
 	outputFormat string
 	configPath   string
+	apiEndpoint  string
 )
 
 var rootCmd = &cobra.Command{
@@ -48,6 +49,9 @@ func loadConfig(cmd *cobra.Command) error {
 	if !cmd.Flags().Changed("output") && cfg.Output != "" {
 		outputFormat = cfg.Output
 	}
+	if apiEndpoint == "" && cfg.APIEndpoint != "" {
+		apiEndpoint = cfg.APIEndpoint
+	}
 
 	return nil
 }
@@ -57,8 +61,8 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&region, "region", os.Getenv("GCPHCPCTL_REGION"), "GCP region (env: GCPHCPCTL_REGION)")
 	rootCmd.PersistentFlags().StringVarP(&outputFormat, "output", "o", "text", "Output format: text, json, yaml")
 	rootCmd.PersistentFlags().StringVar(&configPath, "config", "", "Config file path (default: ~/.gcphcpctl/config.yaml)")
+	rootCmd.PersistentFlags().StringVar(&apiEndpoint, "api-endpoint", os.Getenv("GCPHCPCTL_API_ENDPOINT"), "HyperFleet API endpoint URL (env: GCPHCPCTL_API_ENDPOINT)")
 
-	// Register the ops subtree. Self-contained so it can be extracted as a plugin.
 	rootCmd.AddCommand(ops.NewOpsCmd())
 }
 
@@ -74,3 +78,6 @@ func Execute() error {
 func getProject() string      { return project }
 func getRegion() string       { return region }
 func getOutputFormat() string { return outputFormat }
+
+// GetAPIEndpoint returns the configured HyperFleet API endpoint URL.
+func GetAPIEndpoint() string { return apiEndpoint }
