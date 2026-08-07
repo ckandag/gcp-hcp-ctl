@@ -6,11 +6,16 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 )
+
+const maxInfraIDLength = 12
+
+var validInfraIDPattern = regexp.MustCompile(`^[a-z][a-z0-9-]*$`)
 
 type CreateOptions struct {
 	ProjectID           string
@@ -76,6 +81,12 @@ All operations are idempotent and safe to run multiple times.`,
 func (o *CreateOptions) ValidateInputs() error {
 	if o.InfraID == "" {
 		return fmt.Errorf("infra-id is required")
+	}
+	if len(o.InfraID) > maxInfraIDLength {
+		return fmt.Errorf("infra-id %q exceeds maximum length of %d characters", o.InfraID, maxInfraIDLength)
+	}
+	if !validInfraIDPattern.MatchString(o.InfraID) {
+		return fmt.Errorf("infra-id %q is invalid: must start with a lowercase letter and contain only lowercase letters, digits, or hyphens", o.InfraID)
 	}
 	if o.ProjectID == "" {
 		return fmt.Errorf("project is required")

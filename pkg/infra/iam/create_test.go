@@ -21,7 +21,7 @@ func TestValidateInputs(t *testing.T) {
 		{
 			name: "When all required fields are provided it should pass validation",
 			opts: &CreateOptions{
-				InfraID:   "test-infra-id",
+				InfraID:   "test-infra",
 				ProjectID: "test-project-id",
 			},
 			setupJWKSFile: true,
@@ -40,7 +40,7 @@ func TestValidateInputs(t *testing.T) {
 		{
 			name: "When project is missing it should return error",
 			opts: &CreateOptions{
-				InfraID:   "test-infra-id",
+				InfraID:   "test-infra",
 				ProjectID: "",
 			},
 			setupJWKSFile: true,
@@ -50,7 +50,7 @@ func TestValidateInputs(t *testing.T) {
 		{
 			name: "When neither oidc-jwks-file nor oidc-issuer-url is provided it should return error",
 			opts: &CreateOptions{
-				InfraID:             "test-infra-id",
+				InfraID:             "test-infra",
 				ProjectID:           "test-project-id",
 				ClusterOIDCJWKSFile: "",
 				OIDCIssuerURL:       "",
@@ -61,7 +61,7 @@ func TestValidateInputs(t *testing.T) {
 		{
 			name: "When only oidc-issuer-url is provided it should pass validation",
 			opts: &CreateOptions{
-				InfraID:       "test-infra-id",
+				InfraID:       "test-infra",
 				ProjectID:     "test-project-id",
 				OIDCIssuerURL: "https://oidc.example.com/my-cluster",
 			},
@@ -70,7 +70,7 @@ func TestValidateInputs(t *testing.T) {
 		{
 			name: "When JWKS validation fails it should return error",
 			opts: &CreateOptions{
-				InfraID:             "test-infra-id",
+				InfraID:             "test-infra",
 				ProjectID:           "test-project-id",
 				ClusterOIDCJWKSFile: "non-existent-file",
 			},
@@ -80,7 +80,7 @@ func TestValidateInputs(t *testing.T) {
 		{
 			name: "When both oidc-jwks-file and oidc-issuer-url are provided it should pass validation",
 			opts: &CreateOptions{
-				InfraID:       "test-infra-id",
+				InfraID:       "test-infra",
 				ProjectID:     "test-project-id",
 				OIDCIssuerURL: "https://custom-oidc.example.com",
 			},

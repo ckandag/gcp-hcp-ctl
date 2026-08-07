@@ -14,7 +14,7 @@ func TestDestroyOptionsValidateInputs(t *testing.T) {
 		{
 			name: "When all required fields are provided it should pass validation",
 			opts: &DestroyOptions{
-				InfraID:   "test-infra-id",
+				InfraID:   "test-infra",
 				ProjectID: "test-project-id",
 			},
 		},
@@ -29,7 +29,7 @@ func TestDestroyOptionsValidateInputs(t *testing.T) {
 		{
 			name: "When project is missing it should return error",
 			opts: &DestroyOptions{
-				InfraID:   "test-infra-id",
+				InfraID:   "test-infra",
 				ProjectID: "",
 			},
 			expectedError: "project is required",
