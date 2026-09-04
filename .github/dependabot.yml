@@ -9,3 +9,6 @@ updates:
       go-dependencies:
         patterns:
           - "*"
+    labels:
+      - "ok-to-test"
+      - "area/dependency"
