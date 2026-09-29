@@ -199,7 +199,13 @@ func (m *Manager) CreateOIDCProvider(ctx context.Context) (string, string, error
 
 	providerAudience := m.formatProviderAudience()
 	oidc := &iamapi.Oidc{
-		AllowedAudiences: []string{defaultOIDCAudience},
+		// Scope the accepted token audience to this provider's resource URI (GCP best
+		// practice) so a token minted for this WIF provider cannot be replayed against any
+		// other system that trusts the same OIDC issuer (confused-deputy / token-replay).
+		// The legacy "openshift" audience is still accepted so tokens minted by control
+		// planes that have not yet moved to the provider-scoped audience keep working during
+		// rollout; it should be dropped once every control plane mints providerAudience.
+		AllowedAudiences: []string{providerAudience, defaultOIDCAudience},
 		IssuerUri:        issuerURI,
 		JwksJson:         jwksJson,
 	}
@@ -252,7 +258,7 @@ func (m *Manager) ensureProviderUsable(ctx context.Context, providerID string, e
 
 	disabledMismatch := existingProvider.Disabled
 
-	var issuerMismatch, jwksMismatch bool
+	var issuerMismatch, jwksMismatch, audienceMismatch bool
 	if existingProvider.Oidc == nil || expectedProvider.Oidc == nil {
 		m.logger.V(1).Info("Provider has nil OIDC config, treating as mismatch",
 			"providerID", providerID,
@@ -260,23 +266,28 @@ func (m *Manager) ensureProviderUsable(ctx context.Context, providerID string, e
 			"expectedOidcNil", expectedProvider.Oidc == nil)
 		issuerMismatch = true
 		jwksMismatch = true
+		audienceMismatch = true
 	} else {
 		issuerMismatch = existingProvider.Oidc.IssuerUri != expectedProvider.Oidc.IssuerUri
 		jwksMismatch = !m.compareJWKS(existingProvider.Oidc.JwksJson, expectedProvider.Oidc.JwksJson)
+		// Migrate providers created before the audience was scoped to providerAudience
+		// (they only allow the legacy "openshift" value).
+		audienceMismatch = !allowedAudiencesEqual(existingProvider.Oidc.AllowedAudiences, expectedProvider.Oidc.AllowedAudiences)
 	}
 
-	needsUpdate := disabledMismatch || issuerMismatch || jwksMismatch
+	needsUpdate := disabledMismatch || issuerMismatch || jwksMismatch || audienceMismatch
 
 	if needsUpdate {
 		m.logger.Info("Updating provider configuration", "providerID", providerID)
 		m.logger.V(1).Info("Provider mismatch details",
 			"disabledMismatch", disabledMismatch,
 			"issuerMismatch", issuerMismatch,
-			"jwksMismatch", jwksMismatch)
+			"jwksMismatch", jwksMismatch,
+			"audienceMismatch", audienceMismatch)
 
 		expectedProvider.Name = providerResource
 		expectedProvider.Disabled = false
-		if err := m.client.UpdateWorkloadIdentityProvider(ctx, providerResource, expectedProvider, "disabled,oidc.jwks_json,oidc.issuer_uri"); err != nil {
+		if err := m.client.UpdateWorkloadIdentityProvider(ctx, providerResource, expectedProvider, "disabled,oidc.jwks_json,oidc.issuer_uri,oidc.allowed_audiences"); err != nil {
 			return "", "", fmt.Errorf("failed to update provider: %w", err)
 		}
 		m.logger.V(1).Info("Updated provider", "providerID", providerID)
@@ -557,6 +568,28 @@ func (m *Manager) formatPoolParent() string {
 
 func (m *Manager) formatProviderResource() string {
 	return fmt.Sprintf("%s/providers/%s", m.formatPoolParent(), m.formatProviderID())
+}
+
+// allowedAudiencesEqual reports whether two AllowedAudiences lists contain the same set of
+// values, ignoring ordering and duplicates.
+func allowedAudiencesEqual(existingAudiences, expectedAudiences []string) bool {
+	existingAudienceSet := make(map[string]struct{}, len(existingAudiences))
+	for _, audience := range existingAudiences {
+		existingAudienceSet[audience] = struct{}{}
+	}
+	expectedAudienceSet := make(map[string]struct{}, len(expectedAudiences))
+	for _, audience := range expectedAudiences {
+		expectedAudienceSet[audience] = struct{}{}
+	}
+	if len(existingAudienceSet) != len(expectedAudienceSet) {
+		return false
+	}
+	for audience := range expectedAudienceSet {
+		if _, found := existingAudienceSet[audience]; !found {
+			return false
+		}
+	}
+	return true
 }
 
 // ============================================================================

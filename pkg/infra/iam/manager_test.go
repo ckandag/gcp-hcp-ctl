@@ -673,3 +673,60 @@ func TestCompareJWKS(t *testing.T) {
 		})
 	}
 }
+
+func TestManagerFormatProviderAudience(t *testing.T) {
+	m := &Manager{
+		projectNumber: "123456789",
+		infraID:       "test-infra",
+		logger:        logr.Discard(),
+	}
+
+	expected := "//iam.googleapis.com/projects/123456789/locations/global/workloadIdentityPools/test-infra-wi-pool/providers/test-infra-k8s-provider"
+	if got := m.formatProviderAudience(); got != expected {
+		t.Errorf("expected %q, got %q", expected, got)
+	}
+}
+
+func TestAllowedAudiencesEqual(t *testing.T) {
+	providerAudience := "//iam.googleapis.com/projects/123456789/locations/global/workloadIdentityPools/test-infra-wi-pool/providers/test-infra-k8s-provider"
+
+	tests := []struct {
+		name              string
+		existingAudiences []string
+		expectedAudiences []string
+		wantEqual         bool
+	}{
+		{
+			name:              "When both lists match ignoring order it should be equal",
+			existingAudiences: []string{"openshift", providerAudience},
+			expectedAudiences: []string{providerAudience, "openshift"},
+			wantEqual:         true,
+		},
+		{
+			name:              "When a legacy provider only allows openshift it should not be equal",
+			existingAudiences: []string{"openshift"},
+			expectedAudiences: []string{providerAudience, "openshift"},
+			wantEqual:         false,
+		},
+		{
+			name:              "When the desired audience is missing it should not be equal",
+			existingAudiences: []string{"openshift", "some-other-audience"},
+			expectedAudiences: []string{providerAudience, "openshift"},
+			wantEqual:         false,
+		},
+		{
+			name:              "When both lists are empty it should be equal",
+			existingAudiences: []string{},
+			expectedAudiences: nil,
+			wantEqual:         true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := allowedAudiencesEqual(tt.existingAudiences, tt.expectedAudiences); got != tt.wantEqual {
+				t.Errorf("expected %v, got %v", tt.wantEqual, got)
+			}
+		})
+	}
+}
