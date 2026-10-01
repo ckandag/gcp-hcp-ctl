@@ -14,6 +14,8 @@ func TestCreateOptionsValidate(t *testing.T) {
 			instanceType: "n2-standard-4",
 			diskSize:     100,
 			diskType:     "pd-balanced",
+			zone:         "us-central1-a",
+			subnet:       "cluster-subnet",
 			version:      "4.22.0",
 			channelGroup: "stable",
 		}
@@ -30,6 +32,22 @@ func TestCreateOptionsValidate(t *testing.T) {
 		o.version = ""
 		if err := o.validate(); err == nil {
 			t.Error("expected error for empty version")
+		}
+	})
+
+	t.Run("When zone is empty it should error", func(t *testing.T) {
+		o := valid()
+		o.zone = ""
+		if err := o.validate(); err == nil {
+			t.Error("expected error for empty zone")
+		}
+	})
+
+	t.Run("When subnet is empty it should error", func(t *testing.T) {
+		o := valid()
+		o.subnet = ""
+		if err := o.validate(); err == nil {
+			t.Error("expected error for empty subnet")
 		}
 	})
 
@@ -75,6 +93,7 @@ func TestBuildNodePool(t *testing.T) {
 			diskSize:     200,
 			diskType:     "pd-ssd",
 			zone:         "us-central1-a",
+			subnet:       "projects/my-project/regions/us-central1/subnetworks/cluster-subnet",
 			version:      "4.22.0",
 			channelGroup: "candidate",
 		}
@@ -113,6 +132,9 @@ func TestBuildNodePool(t *testing.T) {
 		}
 		if np.Spec.Platform.GCP.Zone != "us-central1-a" {
 			t.Errorf("expected zone 'us-central1-a', got %q", np.Spec.Platform.GCP.Zone)
+		}
+		if np.Spec.Platform.GCP.Subnet != "projects/my-project/regions/us-central1/subnetworks/cluster-subnet" {
+			t.Errorf("expected the selected cluster subnet, got %q", np.Spec.Platform.GCP.Subnet)
 		}
 		if np.Spec.Release.Version != "4.22.0" {
 			t.Errorf("expected version '4.22.0', got %q", np.Spec.Release.Version)

@@ -476,7 +476,7 @@ func TestNodepoolCommandErrorBoundary(t *testing.T) {
 		{"list forbidden", 403, `{"error":"forbidden","message":"` + secrets + `"}`, `listing nodepools: permission denied`, []string{"list"}, false},
 		{"scale forbidden", 403, `{"error":"forbidden","message":"` + secrets + `"}`, `scaling nodepool test-pool: permission denied`, []string{"scale", "test-pool", "--replicas", "3"}, false},
 		{"delete forbidden", 403, `{"error":"forbidden","message":"` + secrets + `"}`, `deleting nodepool test-pool: permission denied`, []string{"delete", "test-pool", "--confirm"}, false},
-		{"create uncertain", 503, `{"error":"` + secrets + `"}`, `creating nodepool: service unavailable; check the resource before retrying`, []string{"create", "test-pool", "--cluster", "test-cluster", "--version", "4.22.0"}, true},
+		{"create uncertain", 503, `{"error":"` + secrets + `"}`, `creating nodepool: service unavailable; check the resource before retrying`, []string{"create", "test-pool", "--cluster", "test-cluster", "--version", "4.22.0", "--zone", "us-central1-a", "--subnet", "test-subnet"}, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			err, out, stderr := executeNodepoolError(t, tc.code, tc.body, tc.args...)
@@ -505,7 +505,7 @@ func TestNodepoolCommandErrorBoundary(t *testing.T) {
 
 func TestNodepoolCreateInvalidSuccessDoesNotLeak(t *testing.T) {
 	body := `{"kind":"NodePool","metadata":{"name":"Bearer synthetic-token"}`
-	err, out, stderr := executeNodepoolError(t, 200, body, "create", "test-pool", "--cluster", "test-cluster", "--version", "4.22.0")
+	err, out, stderr := executeNodepoolError(t, 200, body, "create", "test-pool", "--cluster", "test-cluster", "--version", "4.22.0", "--zone", "us-central1-a", "--subnet", "test-subnet")
 	want := "creating nodepool: server reported success, but its response was invalid; check the resource before retrying"
 	var httpErr *platformapi.HTTPError
 	if err == nil || err.Error() != want || !platformapi.IsUncertainOutcome(err) || errors.As(err, &httpErr) {
