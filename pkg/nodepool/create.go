@@ -15,6 +15,7 @@ type createOptions struct {
 	diskSize     int64
 	diskType     string
 	zone         string
+	subnet       string
 	version      string
 	channelGroup string
 	outputFmt    string
@@ -50,12 +51,15 @@ func newCreateCmd() *cobra.Command {
 	cmd.Flags().StringVar(&opts.instanceType, "instance-type", "n2-standard-4", "GCE machine type")
 	cmd.Flags().Int64Var(&opts.diskSize, "disk-size", 100, "Boot disk size in GB")
 	cmd.Flags().StringVar(&opts.diskType, "disk-type", "pd-balanced", "Boot disk type: pd-standard, pd-ssd, pd-balanced")
-	cmd.Flags().StringVar(&opts.zone, "zone", "", "GCP zone (optional)")
+	cmd.Flags().StringVar(&opts.zone, "zone", "", "GCP zone")
+	cmd.Flags().StringVar(&opts.subnet, "subnet", "", "GCP subnet name")
 	cmd.Flags().StringVar(&opts.version, "version", "", "OCP version (e.g. 4.22.0-rc.5) (required)")
 	cmd.Flags().StringVar(&opts.channelGroup, "channel-group", "stable", "Channel group: stable, fast, candidate, eus")
 	cmd.Flags().StringVarP(&opts.outputFmt, "output", "o", "text", "Output format: text, json, yaml")
 
 	_ = cmd.MarkFlagRequired("cluster")
+	_ = cmd.MarkFlagRequired("zone")
+	_ = cmd.MarkFlagRequired("subnet")
 
 	return cmd
 }
@@ -91,6 +95,12 @@ func (o *createOptions) validate() error {
 	if o.replicas < 0 {
 		return fmt.Errorf("--replicas must be non-negative")
 	}
+	if o.zone == "" {
+		return fmt.Errorf("--zone is required")
+	}
+	if o.subnet == "" {
+		return fmt.Errorf("--subnet is required")
+	}
 	switch o.channelGroup {
 	case "stable", "fast", "candidate", "eus":
 	default:
@@ -123,6 +133,7 @@ func (o *createOptions) buildNodePool(npName string) *gcpv1.NodePool {
 					MachineType: o.instanceType,
 					DiskSizeGB:  o.diskSize,
 					DiskType:    o.diskType,
+					Subnet:      o.subnet,
 				},
 			},
 			Release: gcpv1.ReleaseSpec{
