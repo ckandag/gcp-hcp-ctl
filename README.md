@@ -72,10 +72,13 @@ Create, inspect, list, scale, and delete nodepools via the platform API server.
 
 ```bash
 # Create a nodepool in a cluster
-gcphcpctl nodepool create my-nodepool --cluster my-cluster --replicas 2
+gcphcpctl nodepool create my-nodepool --cluster my-cluster \
+  --zone us-central1-a --subnet my-subnet --version 4.22.0 --replicas 2
 gcphcpctl nodepool create workers --cluster my-cluster \
+  --zone us-central1-a --subnet my-subnet --version 4.22.0 \
   --replicas 3 --instance-type n2-standard-8 --disk-size 200
 gcphcpctl nodepool create workers --cluster my-cluster \
+  --zone us-central1-a --subnet my-subnet \
   --replicas 2 --version 4.22.0-rc.5 --channel-group candidate
 
 # Get a nodepool by name or ID
