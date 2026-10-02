@@ -29,10 +29,13 @@ func newCreateCmd() *cobra.Command {
 		Short: "Create a nodepool",
 		Long: `Create a nodepool in a cluster via the platform API server.
 
-  gcphcpctl nodepool create my-nodepool --cluster my-cluster --replicas 2
+  gcphcpctl nodepool create my-nodepool --cluster my-cluster \
+    --zone us-central1-a --subnet my-subnet --version 4.22.0 --replicas 2
   gcphcpctl nodepool create workers --cluster my-cluster \
+    --zone us-central1-a --subnet my-subnet --version 4.22.0 \
     --replicas 3 --instance-type n2-standard-8 --disk-size 200
   gcphcpctl nodepool create workers --cluster my-cluster \
+    --zone us-central1-a --subnet my-subnet \
     --replicas 2 --version 4.22.0-rc.5 --channel-group candidate`,
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 {
